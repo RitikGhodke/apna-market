@@ -42,6 +42,8 @@ export const useCart = () => {
   };
 
   const fetchCart = async () => {
+     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  if (!token) return;
     try {
       const res = await API.get('/cart');
       if (res.data.cart) {

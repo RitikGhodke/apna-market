@@ -7,9 +7,10 @@ import DashboardNav from '@/components/common/DashboardNav';
 
 export default function DashboardLayout({ children }) {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isRestoring  } = useAuth();
 
   useEffect(() => {
+    if (isRestoring) return;
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
@@ -17,7 +18,9 @@ export default function DashboardLayout({ children }) {
     if (user && user.role !== 'shop') {
       router.push('/feed');
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, isRestoring ]);
+
+  if (isRestoring) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -86,11 +86,20 @@ export default function CustomersPage() {
           {filtered.map((item, i) => (
             <div key={i}
               className="bg-white rounded-2xl border border-gray-100 p-4 flex items-center gap-4 hover:shadow-sm transition-all">
-              <div className="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-black text-sm">
-                  {getInitials(item.customer?.name)}
-                </span>
-              </div>
+              
+<div className="w-12 h-12 rounded-2xl flex-shrink-0 overflow-hidden bg-gray-900 flex items-center justify-center">
+  {item.customer?.profilePic ? (
+    <img
+      src={item.customer.profilePic}
+      alt={item.customer?.name}
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    <span className="text-white font-black text-sm">
+      {getInitials(item.customer?.name)}
+    </span>
+  )}
+</div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-900 truncate">{item.customer?.name}</p>
                 <p className="text-xs text-gray-400">{item.customer?.phone}</p>

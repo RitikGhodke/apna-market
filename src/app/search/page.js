@@ -17,7 +17,7 @@ const POPULAR = [
 
 export default function SearchPage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isRestoring } = useAuth();
   const [query, setQuery] = useState('');
   const [searchType, setSearchType] = useState('shops');
   const [results, setResults] = useState([]);
@@ -25,11 +25,12 @@ export default function SearchPage() {
   const debouncedQuery = useDebounce(query, 400);
 
   useEffect(() => {
+    if (isRestoring) return;
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isRestoring]);
 
   useEffect(() => {
     if (debouncedQuery.trim()) {

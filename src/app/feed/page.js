@@ -24,7 +24,7 @@ const CATEGORIES = [
 
 export default function FeedPage() {
   const router = useRouter();
-  const { user, isAuthenticated, logoutUser } = useAuth();
+  const { user, isAuthenticated, logoutUser, isRestoring } = useAuth();
   const [shops, setShops] = useState([]);
   const [featured, setFeatured] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,12 +37,13 @@ export default function FeedPage() {
   const debouncedSearch = useDebounce(searchQuery, 500);
 
   useEffect(() => {
+    if (isRestoring) return;
     if (!isAuthenticated) {
       router.push('/auth/login');
       return;
     }
     loadShops();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isRestoring]);
 
   useEffect(() => {
     if (debouncedSearch) {

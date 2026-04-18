@@ -34,3 +34,11 @@ export const searchProducts = async (params) => {
   const res = await API.get('/search/products', { params });
   return res.data;
 };
+
+
+export const uploadProductImage = async (productId, file) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await API.post(`/upload/product-image/${productId}`, formData);
+  return res.data;
+};
