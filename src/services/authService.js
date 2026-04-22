@@ -19,3 +19,14 @@ export const createShopService = async (data) => {
   const res = await API.post('/auth/create-shop', data);
   return res.data;
 };
+
+
+export const forgotPasswordService = async (email) => {
+  const res = await API.post('/auth/forgot-password', { email });
+  return res.data;
+};
+
+export const resetPasswordService = async (token, password) => {
+  const res = await API.post('/auth/reset-password', { token, password });
+  return res.data;
+};

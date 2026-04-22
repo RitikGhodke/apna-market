@@ -673,6 +673,117 @@ export default function ShopOrdersPage() {
     });
   };
 
+   const generateInvoice = (order) => {
+  const invoiceHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Invoice #${order.orderId}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; padding: 40px; color: #111; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid #111; }
+        .brand { font-size: 24px; font-weight: 900; }
+        .brand span { color: #16a34a; }
+        .invoice-info { text-align: right; }
+        .invoice-info h2 { font-size: 20px; font-weight: 900; color: #111; }
+        .invoice-info p { font-size: 12px; color: #666; margin-top: 4px; }
+        .section { margin-bottom: 24px; }
+        .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; }
+        .customer-info p { font-size: 13px; color: #333; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+        th { background: #f5f5f5; padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #666; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .total-row td { font-weight: 700; font-size: 14px; border-top: 2px solid #111; border-bottom: none; padding-top: 14px; }
+        .status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #dcfce7; color: #16a34a; }
+        .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 11px; color: #999; }
+        .payment-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        ${order.isUdhar ? '.payment-badge { background: #fff1f2; color: #e11d48; border-color: #fecdd3; }' : ''}
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          <div class="brand">Apna <span>Market</span></div>
+          <p style="font-size:12px;color:#666;margin-top:4px;">apnamarket.in</p>
+        </div>
+        <div class="invoice-info">
+          <h2>INVOICE</h2>
+          <p>#${order.orderId}</p>
+          <p>${new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <div style="margin-top:8px"><span class="status">${order.status.toUpperCase()}</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:40px;margin-bottom:28px;">
+        <div class="section" style="flex:1">
+          <div class="section-title">Customer</div>
+          <div class="customer-info">
+            <p><strong>${order.userId?.name || 'Customer'}</strong></p>
+            <p>${order.userId?.phone || ''}</p>
+          </div>
+        </div>
+        <div class="section" style="flex:1">
+          <div class="section-title">Delivery Address</div>
+          <div class="customer-info">
+            <p>${order.deliveryAddress?.fullAddress || ''}</p>
+            <p>${order.deliveryAddress?.city || ''} - ${order.deliveryAddress?.pincode || ''}</p>
+          </div>
+        </div>
+        <div class="section" style="flex:1;text-align:right">
+          <div class="section-title">Payment</div>
+          <span class="payment-badge">${order.isUdhar ? '💳 Udhar' : order.paymentMethod}</span>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th style="text-align:center">Qty</th>
+            <th style="text-align:right">Price</th>
+            <th style="text-align:right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${order.items.map(item => `
+            <tr>
+              <td>${item.name}</td>
+              <td style="text-align:center">${item.quantity}</td>
+              <td style="text-align:right">₹${item.price}</td>
+              <td style="text-align:right">₹${item.price * item.quantity}</td>
+            </tr>
+          `).join('')}
+          <tr>
+            <td colspan="3" style="text-align:right;color:#888;font-size:12px">Subtotal</td>
+            <td style="text-align:right;color:#888;font-size:12px">₹${order.productTotal}</td>
+          </tr>
+          <tr>
+            <td colspan="3" style="text-align:right;color:#888;font-size:12px">Delivery</td>
+            <td style="text-align:right;color:#888;font-size:12px">${order.deliveryCharge === 0 ? 'FREE' : `₹${order.deliveryCharge}`}</td>
+          </tr>
+          <tr class="total-row">
+            <td colspan="3" style="text-align:right">Total Amount</td>
+            <td style="text-align:right">₹${order.totalAmount}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="footer">
+        <p>Thank you for your order! 🙏</p>
+        <p style="margin-top:4px">Apna Market — apnamarket.in</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const win = window.open('', '_blank');
+  win.document.write(invoiceHTML);
+  win.document.close();
+  win.print();
+};
+
   return (
     <div className="p-4 lg:p-6 space-y-5">
 
@@ -828,9 +939,21 @@ export default function ShopOrdersPage() {
                   </div>
                 )}
 
+                {/* ✅ Invoice Button — HAR ORDER PE */}
+<div className="px-5 py-3 border-b border-gray-50">
+  <button
+    onClick={() => generateInvoice(order)}
+    className="w-full py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold rounded-xl text-sm transition-all active:scale-95 border border-gray-200 flex items-center justify-center gap-2">
+    🧾 Invoice Print / Download
+  </button>
+</div>
+
                 {/* Action Buttons */}
                 {(order.status === 'pending' || nextStatus) && (
                   <div className="px-5 py-4 flex gap-3 flex-wrap">
+                     
+                  
+
 
                     {/* UPI Verify button */}
                     {order.paymentMethod === 'ONLINE' &&

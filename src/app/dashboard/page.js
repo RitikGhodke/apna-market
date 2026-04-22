@@ -206,6 +206,92 @@ export default function DashboardPage() {
 
       </div>
 
+       {/* Best Selling Time + Customer Retention */}
+<div className="grid lg:grid-cols-2 gap-6">
+
+  {/* Best Selling Time */}
+  <div className="bg-white rounded-3xl border border-gray-100 p-5">
+    <h2 className="font-black text-gray-900 mb-4">⏰ Best Selling Time</h2>
+    {analytics?.hourlyOrders && Object.keys(analytics.hourlyOrders).length > 0 ? (
+      <div className="space-y-2">
+        {Object.entries(analytics.hourlyOrders)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+          .map(([hour, count]) => {
+            const max = Math.max(...Object.values(analytics.hourlyOrders));
+            const width = Math.round((count / max) * 100);
+            const h = parseInt(hour);
+            const label = h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+            return (
+              <div key={hour} className="flex items-center gap-3">
+                <span className="text-xs font-bold text-gray-500 w-12 text-right flex-shrink-0">{label}</span>
+                <div className="flex-1 bg-gray-100 rounded-full h-2">
+                  <div className="bg-gray-900 h-2 rounded-full transition-all"
+                    style={{ width: `${width}%` }} />
+                </div>
+                <span className="text-xs font-black text-gray-700 w-8 flex-shrink-0">{count}</span>
+              </div>
+            );
+          })}
+        <p className="text-xs text-gray-400 mt-3">* Last 30 days ke orders ke basis pe</p>
+      </div>
+    ) : (
+      <div className="text-center py-8">
+        <div className="text-3xl mb-2">⏰</div>
+        <p className="text-gray-500 text-sm font-medium">Abhi data nahi hai</p>
+      </div>
+    )}
+  </div>
+
+  {/* Customer Retention */}
+  <div className="bg-white rounded-3xl border border-gray-100 p-5">
+    <h2 className="font-black text-gray-900 mb-4">👥 Customer Retention</h2>
+    {analytics?.retention ? (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 p-3 bg-green-50 rounded-2xl">
+          <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-lg">🆕</span>
+          </div>
+          <div>
+            <p className="font-black text-gray-900">{analytics.retention.newCustomers}</p>
+            <p className="text-xs text-gray-500">New Customers this month</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-2xl">
+          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-lg">🔄</span>
+          </div>
+          <div>
+            <p className="font-black text-gray-900">{analytics.retention.returningCustomers}</p>
+            <p className="text-xs text-gray-500">Returning Customers</p>
+          </div>
+        </div>
+        {analytics.retention.totalThisMonth > 0 && (
+          <div className="bg-gray-50 rounded-2xl p-3">
+            <p className="text-xs font-bold text-gray-500 mb-2">Retention Rate</p>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-500 h-2 rounded-full"
+                  style={{ width: `${Math.round((analytics.retention.returningCustomers / analytics.retention.totalThisMonth) * 100)}%` }} />
+              </div>
+              <span className="text-xs font-black text-gray-700">
+                {Math.round((analytics.retention.returningCustomers / analytics.retention.totalThisMonth) * 100)}%
+              </span>
+            </div>
+          </div>
+        )}
+        <p className="text-xs text-gray-400">* Is mahine vs pichle mahine</p>
+      </div>
+    ) : (
+      <div className="text-center py-8">
+        <div className="text-3xl mb-2">👥</div>
+        <p className="text-gray-500 text-sm font-medium">Abhi data nahi hai</p>
+      </div>
+    )}
+  </div>
+</div>
+
+
       {/* Quick Actions */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[

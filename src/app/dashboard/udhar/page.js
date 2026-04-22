@@ -479,13 +479,23 @@ export default function UdharPage() {
 
                     {/* Avatar with color dot */}
                     <div className="relative flex-shrink-0">
-                      <div className="w-11 h-11 bg-gray-900 rounded-xl flex items-center justify-center">
-                        <span className="text-white font-black text-sm">
-                          {udhar.customerName?.charAt(0) || 'C'}
-                        </span>
-                      </div>
-                      <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${colors.dot}`} />
-                    </div>
+                      <div className="w-11 h-11 bg-gray-900 rounded-xl overflow-hidden flex items-center justify-center">
+    {udhar.customerProfilePic ? (
+      <img
+        src={udhar.customerProfilePic}
+        alt={udhar.customerName}
+        className="w-full h-full object-cover"
+      />
+    ) : (
+      <span className="text-white font-black text-sm">
+        {udhar.customerName?.charAt(0) || 'C'}
+      </span>
+    )}
+  </div>
+
+  {/* Color dot — ye waise hi rahega */}
+  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${colors.dot}`} />
+</div>
 
                     {/* Name + phone + days */}
                     <div className="flex-1 min-w-0">

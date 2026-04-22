@@ -995,6 +995,398 @@
 
 
 
+// 'use client';
+
+// import { useState, useEffect } from 'react';
+// import { useParams, useRouter } from 'next/navigation';
+// import Link from 'next/link';
+// import { getShopBySlug } from '@/services/shopService';
+// import { useAuth } from '@/hooks/useAuth';
+// import { useCart } from '@/hooks/useCart';
+// import ProductCard from '@/components/shop/ProductCard';
+// import BottomNav from '@/components/common/BottomNav';
+// import API from '@/services/api';
+// import toast from 'react-hot-toast';
+
+// export default function ShopPage() {
+//   const { slug } = useParams();
+//   const router = useRouter();
+//   const { isAuthenticated } = useAuth();
+//   const { items } = useCart();
+
+//   const [shop, setShop] = useState(null);
+//   const [products, setProducts] = useState([]);
+//   const [loading, setLoading] = useState(true);
+//   const [activeCategory, setActiveCategory] = useState('all');
+//   const [isFavourite, setIsFavourite] = useState(false);
+//   const [favLoading, setFavLoading] = useState(false);
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [showCartBar, setShowCartBar] = useState(false); // ✅ naya
+
+//   useEffect(() => { loadShop(); }, [slug]);
+
+//   // ✅ cartCount change hone pe 3 second ke liye bar dikhao
+//   useEffect(() => {
+//     const cartCount = items?.length || 0;
+//     if (cartCount > 0) {
+//       setShowCartBar(true);
+//       const timer = setTimeout(() => setShowCartBar(false), 3000);
+//       return () => clearTimeout(timer);
+//     } else {
+//       setShowCartBar(false);
+//     }
+//   }, [items?.length]);
+
+//   const loadShop = async () => {
+//     try {
+//       setLoading(true);
+//       const data = await getShopBySlug(slug);
+//       setShop(data.shop);
+//       setProducts(data.products);
+//     } catch {
+//       toast.error('Shop nahi mili!');
+//       router.push('/feed');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const toggleFavourite = async () => {
+//     if (!isAuthenticated) { router.push('/auth/login'); return; }
+//     setFavLoading(true);
+//     try {
+//       const res = await API.post(`/user/favourite/${shop._id}`);
+//       setIsFavourite(res.data.isFavourite);
+//       toast.success(res.data.isFavourite ? 'Wishlist mein add hua!' : 'Wishlist se hata diya');
+//     } catch { toast.error('Error aaya!'); }
+//     finally { setFavLoading(false); }
+//   };
+
+//   const categories = ['all', ...new Set(products.map(p => p.category))];
+//   const filteredProducts = products.filter(p => {
+//     const matchCat = activeCategory === 'all' || p.category === activeCategory;
+//     const matchSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase());
+//     return matchCat && matchSearch;
+//   });
+//   const cartCount = items?.length || 0;
+
+//   const categoryEmoji = {
+//     kirana: '🛒', dairy: '🥛', fruits: '🍎',
+//     food: '🍱', medical: '💊', fashion: '👗', electronics: '📱',
+//   };
+
+//   if (loading) {
+//     return (
+//       <div style={{ minHeight: '100vh', background: '#f1f3f6' }}>
+//         <div style={{ background: '#2874f0', height: '56px' }} />
+//         <div style={{ height: '200px', background: '#e0e0e0', animation: 'pulse 1.5s infinite' }} />
+//         <div style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+//           {[1,2,3,4].map(i => (
+//             <div key={i} style={{ height: '220px', background: '#fff', borderRadius: '8px', animation: 'pulse 1.5s infinite' }} />
+//           ))}
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (!shop) return null;
+
+//   return (
+//     <div style={{ minHeight: '100vh', background: '#f1f3f6', paddingBottom: '80px', fontFamily: 'sans-serif' }}>
+
+//       {/* ── TOP NAV BAR ── */}
+//       <div style={{
+//         position: 'sticky', top: 0, zIndex: 50,
+//         background: '#2874f0',
+//         padding: '10px 16px',
+//         display: 'flex', alignItems: 'center', gap: '12px',
+//         boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+//       }}>
+//         <button onClick={() => router.back()}
+//           style={{ color: 'white', background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '0', lineHeight: 1 }}>
+//           ←
+//         </button>
+
+//         {/* Search bar */}
+//         <div style={{
+//           flex: 1, background: 'white', borderRadius: '4px',
+//           display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '8px',
+//         }}>
+//           <span style={{ fontSize: '16px', color: '#888' }}>🔍</span>
+//           <input
+//             type="text"
+//             placeholder={`Search in ${shop.shopName}...`}
+//             value={searchQuery}
+//             onChange={e => setSearchQuery(e.target.value)}
+//             style={{
+//               border: 'none', outline: 'none', flex: 1,
+//               fontSize: '14px', color: '#333', background: 'transparent',
+//             }}
+//           />
+//         </div>
+
+//         {/* Cart */}
+//         <Link href="/cart" style={{ position: 'relative', textDecoration: 'none' }}>
+//           <span style={{ fontSize: '24px' }}>🛒</span>
+//           {cartCount > 0 && (
+//             <span style={{
+//               position: 'absolute', top: '-6px', right: '-6px',
+//               background: '#ff6161', color: 'white',
+//               fontSize: '10px', fontWeight: 'bold',
+//               width: '18px', height: '18px', borderRadius: '50%',
+//               display: 'flex', alignItems: 'center', justifyContent: 'center',
+//             }}>{cartCount}</span>
+//           )}
+//         </Link>
+
+//         {/* Wishlist */}
+//         <button onClick={toggleFavourite} disabled={favLoading}
+//           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: 0 }}>
+//           {isFavourite ? '❤️' : '🤍'}
+//         </button>
+//       </div>
+
+//       {/* ── BANNER ── */}
+//       <div style={{ width: '100%', position: 'relative' }}>
+//         {shop.banner ? (
+//           <img src={shop.banner} alt={shop.shopName}
+//             style={{ width: '100%', height: 'auto', display: 'block' }} />
+//         ) : (
+//           <div style={{
+//             width: '100%', height: '180px',
+//             background: `linear-gradient(135deg, ${shop.themeColor}cc, ${shop.themeColor})`,
+//             display: 'flex', alignItems: 'center', justifyContent: 'center',
+//           }}>
+//             <span style={{ fontSize: '80px', opacity: 0.3 }}>{categoryEmoji[shop.category] || '🏪'}</span>
+//           </div>
+//         )}
+//       </div>
+
+//       {/* ── SHOP INFO CARD ── */}
+//       <div style={{
+//         background: 'white', margin: '0 0 8px 0',
+//         padding: '16px', borderBottom: '1px solid #e0e0e0',
+//       }}>
+//         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+//           {/* Logo */}
+//           <div style={{
+//             width: '64px', height: '64px', borderRadius: '8px',
+//             overflow: 'hidden', border: '1px solid #e0e0e0',
+//             background: '#f5f5f5', flexShrink: 0,
+//             display: 'flex', alignItems: 'center', justifyContent: 'center',
+//           }}>
+//             {shop.logo
+//               ? <img src={shop.logo} alt={shop.shopName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+//               : <span style={{ fontSize: '28px' }}>{categoryEmoji[shop.category] || '🏪'}</span>
+//             }
+//           </div>
+
+//           <div style={{ flex: 1 }}>
+//             <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#212121', margin: '0 0 4px' }}>
+//               {shop.shopName}
+//             </h1>
+//             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+//               {shop.rating > 0 && (
+//                 <span style={{
+//                   background: '#388e3c', color: 'white',
+//                   fontSize: '12px', fontWeight: '700',
+//                   padding: '2px 8px', borderRadius: '4px',
+//                   display: 'flex', alignItems: 'center', gap: '3px',
+//                 }}>
+//                   {shop.rating.toFixed(1)} ★
+//                 </span>
+//               )}
+//               <span style={{ fontSize: '12px', color: '#878787' }}>
+//                 {shop.totalOrders} orders
+//               </span>
+//               <span style={{
+//                 fontSize: '12px', fontWeight: '600',
+//                 color: shop.isOpen ? '#388e3c' : '#d32f2f',
+//                 background: shop.isOpen ? '#e8f5e9' : '#ffebee',
+//                 padding: '2px 8px', borderRadius: '12px',
+//               }}>
+//                 {shop.isOpen ? '● Open' : '● Closed'}
+//               </span>
+//             </div>
+//             {shop.description && (
+//               <p style={{ fontSize: '13px', color: '#878787', margin: 0, lineHeight: 1.4 }}>
+//                 {shop.description}
+//               </p>
+//             )}
+//           </div>
+//         </div>
+
+//         {/* Delivery / offers strip */}
+//         <div style={{
+//           marginTop: '12px', paddingTop: '12px',
+//           borderTop: '1px dashed #e0e0e0',
+//           display: 'flex', gap: '16px', flexWrap: 'wrap',
+//         }}>
+//           {shop.deliverySettings?.deliveryEnabled && (
+//             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+//               <span style={{ fontSize: '16px' }}>🚚</span>
+//               <div>
+//                 <div style={{ fontSize: '12px', fontWeight: '700', color: '#212121' }}>Free Delivery</div>
+//                 <div style={{ fontSize: '11px', color: '#878787' }}>on ₹100+ orders</div>
+//               </div>
+//             </div>
+//           )}
+//           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+//             <span style={{ fontSize: '16px' }}>↩️</span>
+//             <div>
+//               <div style={{ fontSize: '12px', fontWeight: '700', color: '#212121' }}>Easy Returns</div>
+//               <div style={{ fontSize: '11px', color: '#878787' }}>Hassle free</div>
+//             </div>
+//           </div>
+//           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+//             <span style={{ fontSize: '16px' }}>✅</span>
+//             <div>
+//               <div style={{ fontSize: '12px', fontWeight: '700', color: '#212121' }}>Verified Shop</div>
+//               <div style={{ fontSize: '11px', color: '#878787' }}>Trusted seller</div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* ── ANNOUNCEMENT ── */}
+//       {shop.homePage?.announcement && (
+//         <div style={{
+//           background: '#fff8e1', borderLeft: '4px solid #ffc107',
+//           margin: '0 0 8px', padding: '12px 16px',
+//           display: 'flex', gap: '10px', alignItems: 'flex-start',
+//         }}>
+//           <span style={{ fontSize: '16px', flexShrink: 0 }}>📢</span>
+//           <p style={{ fontSize: '13px', color: '#5d4037', margin: 0, fontWeight: '500' }}>
+//             {shop.homePage.announcement}
+//           </p>
+//         </div>
+//       )}
+
+//       {/* ── OFFERS ── */}
+//       {shop.homePage?.offers?.length > 0 && (
+//         <div style={{ background: 'white', marginBottom: '8px', padding: '14px 16px' }}>
+//           <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#212121', margin: '0 0 12px' }}>
+//             🔥 Special Offers
+//           </h2>
+//           <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+//             {shop.homePage.offers.map((offer, i) => (
+//               <div key={i} style={{
+//                 flexShrink: 0, minWidth: '160px',
+//                 background: 'linear-gradient(135deg, #ff6b35, #f7c59f)',
+//                 borderRadius: '8px', padding: '12px',
+//               }}>
+//                 <div style={{ fontSize: '12px', fontWeight: '800', color: 'white' }}>{offer.title}</div>
+//                 <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', marginTop: '2px' }}>{offer.description}</div>
+//                 {offer.discount && (
+//                   <div style={{ fontSize: '22px', fontWeight: '900', color: 'white', marginTop: '6px' }}>
+//                     {offer.discount}% OFF
+//                   </div>
+//                 )}
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//       )}
+
+//       {/* ── CATEGORY FILTER ── */}
+//       <div style={{
+//         background: 'white', marginBottom: '8px',
+//         padding: '12px 16px', borderBottom: '1px solid #e0e0e0',
+//       }}>
+//         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
+//           {categories.map(cat => (
+//             <button key={cat} onClick={() => setActiveCategory(cat)}
+//               style={{
+//                 flexShrink: 0, padding: '7px 16px', borderRadius: '20px',
+//                 fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+//                 border: activeCategory === cat ? '2px solid #2874f0' : '1px solid #e0e0e0',
+//                 background: activeCategory === cat ? '#e8f0fe' : 'white',
+//                 color: activeCategory === cat ? '#2874f0' : '#555',
+//                 transition: 'all 0.15s',
+//               }}>
+//               {cat === 'all' ? 'All' : cat}
+//             </button>
+//           ))}
+//         </div>
+//       </div>
+
+//       {/* ── PRODUCTS ── */}
+//       <div style={{ padding: '0 8px' }}>
+//         {filteredProducts.length === 0 ? (
+//           <div style={{
+//             background: 'white', borderRadius: '8px', margin: '8px 0',
+//             padding: '48px 16px', textAlign: 'center',
+//           }}>
+//             <div style={{ fontSize: '48px', marginBottom: '12px' }}>📦</div>
+//             <p style={{ fontSize: '16px', fontWeight: '700', color: '#212121', margin: '0 0 4px' }}>
+//               Koi product nahi mila
+//             </p>
+//             <p style={{ fontSize: '13px', color: '#878787', margin: 0 }}>
+//               Is category mein abhi kuch nahi hai
+//             </p>
+//           </div>
+//         ) : (
+//           <>
+//             <div style={{
+//               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+//               padding: '10px 8px 8px',
+//             }}>
+//               <span style={{ fontSize: '13px', color: '#878787' }}>
+//                 {filteredProducts.length} products found
+//               </span>
+//             </div>
+//             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+//               {filteredProducts.map(product => (
+//                 <ProductCard key={product._id} product={product} />
+//               ))}
+//             </div>
+//           </>
+//         )}
+//       </div>
+
+//       {/* ── FLOATING CART BAR — 3 second mein gayab ── */}
+//       {showCartBar && cartCount > 0 && (  // ✅ showCartBar condition
+//         <div style={{
+//           position: 'fixed', bottom: '64px', left: 0, right: 0, zIndex: 40,
+//           padding: '0 16px',
+//           animation: 'fadeIn 0.3s ease',
+//         }}>
+//           <Link href="/cart" style={{ textDecoration: 'none' }}>
+//             <div style={{
+//               background: '#2874f0', borderRadius: '8px',
+//               padding: '14px 20px',
+//               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+//               boxShadow: '0 4px 20px rgba(40,116,240,0.4)',
+//             }}>
+//               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+//                 <span style={{
+//                   background: 'rgba(255,255,255,0.2)', borderRadius: '6px',
+//                   padding: '4px 10px', fontSize: '13px', fontWeight: '700', color: 'white',
+//                 }}>
+//                   {cartCount} items
+//                 </span>
+//                 <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>Cart mein hai</span>
+//               </div>
+//               <span style={{ color: 'white', fontWeight: '700', fontSize: '14px' }}>
+//                 View Cart →
+//               </span>
+//             </div>
+//           </Link>
+//         </div>
+//       )}
+
+//       <BottomNav />
+//     </div>
+//   );
+// }
+
+
+
+
+
+
+
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -1021,11 +1413,10 @@ export default function ShopPage() {
   const [isFavourite, setIsFavourite] = useState(false);
   const [favLoading, setFavLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCartBar, setShowCartBar] = useState(false); // ✅ naya
+  const [showCartBar, setShowCartBar] = useState(false);
 
   useEffect(() => { loadShop(); }, [slug]);
 
-  // ✅ cartCount change hone pe 3 second ke liye bar dikhao
   useEffect(() => {
     const cartCount = items?.length || 0;
     if (cartCount > 0) {
@@ -1062,12 +1453,18 @@ export default function ShopPage() {
     finally { setFavLoading(false); }
   };
 
-  const categories = ['all', ...new Set(products.map(p => p.category))];
+  // ✅ Search fix — products filter
+  const categories = ['all', ...new Set(products.map(p => p.category).filter(Boolean))];
   const filteredProducts = products.filter(p => {
     const matchCat = activeCategory === 'all' || p.category === activeCategory;
-    const matchSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    const query = searchQuery.trim().toLowerCase();
+    const matchSearch = !query ||
+      p.name?.toLowerCase().includes(query) ||
+      p.description?.toLowerCase().includes(query) ||
+      p.category?.toLowerCase().includes(query);
     return matchCat && matchSearch;
   });
+
   const cartCount = items?.length || 0;
 
   const categoryEmoji = {
@@ -1077,12 +1474,12 @@ export default function ShopPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#f1f3f6' }}>
-        <div style={{ background: '#2874f0', height: '56px' }} />
-        <div style={{ height: '200px', background: '#e0e0e0', animation: 'pulse 1.5s infinite' }} />
-        <div style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+      <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="h-14 bg-gray-900" />
+        <div className="h-52 bg-gray-200 animate-pulse" />
+        <div className="p-4 grid grid-cols-2 gap-3 mt-2">
           {[1,2,3,4].map(i => (
-            <div key={i} style={{ height: '220px', background: '#fff', borderRadius: '8px', animation: 'pulse 1.5s infinite' }} />
+            <div key={i} className="h-56 bg-white rounded-2xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -1092,157 +1489,133 @@ export default function ShopPage() {
   if (!shop) return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f1f3f6', paddingBottom: '80px', fontFamily: 'sans-serif' }}>
+    <div className="min-h-screen bg-gray-50 pb-24 font-sans">
 
-      {/* ── TOP NAV BAR ── */}
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        background: '#2874f0',
-        padding: '10px 16px',
-        display: 'flex', alignItems: 'center', gap: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-      }}>
-        <button onClick={() => router.back()}
-          style={{ color: 'white', background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '0', lineHeight: 1 }}>
-          ←
-        </button>
+      {/* ── TOP NAV ── */}
+      <div className="sticky top-0 z-50 bg-gray-900 shadow-lg">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button onClick={() => router.back()}
+            className="text-white text-xl font-light w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all flex-shrink-0">
+            ←
+          </button>
 
-        {/* Search bar */}
-        <div style={{
-          flex: 1, background: 'white', borderRadius: '4px',
-          display: 'flex', alignItems: 'center', padding: '8px 12px', gap: '8px',
-        }}>
-          <span style={{ fontSize: '16px', color: '#888' }}>🔍</span>
-          <input
-            type="text"
-            placeholder={`Search in ${shop.shopName}...`}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{
-              border: 'none', outline: 'none', flex: 1,
-              fontSize: '14px', color: '#333', background: 'transparent',
-            }}
-          />
+          {/* Search bar */}
+          <div className="flex-1 flex items-center gap-2 bg-white/10 hover:bg-white/15 transition-all rounded-xl px-3 py-2 border border-white/10">
+            <span className="text-white/50 text-sm flex-shrink-0">🔍</span>
+            <input
+              type="text"
+              placeholder={`Search in ${shop.shopName}...`}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none outline-none flex-1 text-sm text-white placeholder-white/40"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')}
+                className="text-white/50 hover:text-white text-xs flex-shrink-0 transition-all">
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Cart */}
+          <Link href="/cart" className="relative flex-shrink-0">
+            <div className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 transition-all">
+              <span className="text-xl">🛒</span>
+            </div>
+            {cartCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </Link>
+
+          {/* Wishlist */}
+          <button onClick={toggleFavourite} disabled={favLoading}
+            className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 transition-all flex-shrink-0 text-xl">
+            {isFavourite ? '❤️' : '🤍'}
+          </button>
         </div>
 
-        {/* Cart */}
-        <Link href="/cart" style={{ position: 'relative', textDecoration: 'none' }}>
-          <span style={{ fontSize: '24px' }}>🛒</span>
-          {cartCount > 0 && (
-            <span style={{
-              position: 'absolute', top: '-6px', right: '-6px',
-              background: '#ff6161', color: 'white',
-              fontSize: '10px', fontWeight: 'bold',
-              width: '18px', height: '18px', borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>{cartCount}</span>
-          )}
-        </Link>
-
-        {/* Wishlist */}
-        <button onClick={toggleFavourite} disabled={favLoading}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', padding: 0 }}>
-          {isFavourite ? '❤️' : '🤍'}
-        </button>
-      </div>
-
-      {/* ── BANNER ── */}
-      <div style={{ width: '100%', position: 'relative' }}>
-        {shop.banner ? (
-          <img src={shop.banner} alt={shop.shopName}
-            style={{ width: '100%', height: 'auto', display: 'block' }} />
-        ) : (
-          <div style={{
-            width: '100%', height: '180px',
-            background: `linear-gradient(135deg, ${shop.themeColor}cc, ${shop.themeColor})`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span style={{ fontSize: '80px', opacity: 0.3 }}>{categoryEmoji[shop.category] || '🏪'}</span>
+        {/* Search results count */}
+        {searchQuery && (
+          <div className="px-4 pb-2">
+            <span className="text-white/60 text-xs">
+              {filteredProducts.length} results for "{searchQuery}"
+            </span>
           </div>
         )}
       </div>
 
+      {/* ── BANNER ── */}
+      <div className="relative w-full overflow-hidden">
+        {shop.banner ? (
+          <img src={shop.banner} alt={shop.shopName}
+            className="w-full h-auto block" />
+        ) : (
+          <div className="w-full h-44 flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${shop.themeColor}22, ${shop.themeColor}44)` }}>
+            <span className="text-8xl opacity-20">{categoryEmoji[shop.category] || '🏪'}</span>
+          </div>
+        )}
+        {/* Gradient overlay */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent" />
+      </div>
+
       {/* ── SHOP INFO CARD ── */}
-      <div style={{
-        background: 'white', margin: '0 0 8px 0',
-        padding: '16px', borderBottom: '1px solid #e0e0e0',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+      <div className="bg-white mx-3 -mt-6 relative z-10 rounded-2xl shadow-sm border border-gray-100 p-4 mb-3">
+        <div className="flex items-start gap-3">
           {/* Logo */}
-          <div style={{
-            width: '64px', height: '64px', borderRadius: '8px',
-            overflow: 'hidden', border: '1px solid #e0e0e0',
-            background: '#f5f5f5', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
+          <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex items-center justify-center flex-shrink-0 shadow-sm">
             {shop.logo
-              ? <img src={shop.logo} alt={shop.shopName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ fontSize: '28px' }}>{categoryEmoji[shop.category] || '🏪'}</span>
+              ? <img src={shop.logo} alt={shop.shopName} className="w-full h-full object-cover" />
+              : <span className="text-3xl">{categoryEmoji[shop.category] || '🏪'}</span>
             }
           </div>
 
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: '18px', fontWeight: '700', color: '#212121', margin: '0 0 4px' }}>
-              {shop.shopName}
-            </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '6px' }}>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-black text-gray-900 leading-tight">{shop.shopName}</h1>
+            <div className="flex items-center gap-2 flex-wrap mt-1 mb-1.5">
               {shop.rating > 0 && (
-                <span style={{
-                  background: '#388e3c', color: 'white',
-                  fontSize: '12px', fontWeight: '700',
-                  padding: '2px 8px', borderRadius: '4px',
-                  display: 'flex', alignItems: 'center', gap: '3px',
-                }}>
+                <span className="bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-lg flex items-center gap-1">
                   {shop.rating.toFixed(1)} ★
                 </span>
               )}
-              <span style={{ fontSize: '12px', color: '#878787' }}>
-                {shop.totalOrders} orders
-              </span>
-              <span style={{
-                fontSize: '12px', fontWeight: '600',
-                color: shop.isOpen ? '#388e3c' : '#d32f2f',
-                background: shop.isOpen ? '#e8f5e9' : '#ffebee',
-                padding: '2px 8px', borderRadius: '12px',
-              }}>
+              <span className="text-xs text-gray-400">{shop.totalOrders} orders</span>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                shop.isOpen ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'
+              }`}>
                 {shop.isOpen ? '● Open' : '● Closed'}
               </span>
             </div>
             {shop.description && (
-              <p style={{ fontSize: '13px', color: '#878787', margin: 0, lineHeight: 1.4 }}>
-                {shop.description}
-              </p>
+              <p className="text-xs text-gray-400 leading-relaxed line-clamp-2">{shop.description}</p>
             )}
           </div>
         </div>
 
-        {/* Delivery / offers strip */}
-        <div style={{
-          marginTop: '12px', paddingTop: '12px',
-          borderTop: '1px dashed #e0e0e0',
-          display: 'flex', gap: '16px', flexWrap: 'wrap',
-        }}>
+        {/* Trust badges */}
+        <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50 overflow-x-auto hide-scrollbar">
           {shop.deliverySettings?.deliveryEnabled && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '16px' }}>🚚</span>
+            <div className="flex items-center gap-1.5 bg-blue-50 rounded-xl px-3 py-1.5 flex-shrink-0">
+              <span className="text-xs">🚚</span>
               <div>
-                <div style={{ fontSize: '12px', fontWeight: '700', color: '#212121' }}>Free Delivery</div>
-                <div style={{ fontSize: '11px', color: '#878787' }}>on ₹100+ orders</div>
+                <div className="text-xs font-bold text-blue-700">Free Delivery</div>
+                <div className="text-xs text-blue-400">on ₹100+</div>
               </div>
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '16px' }}>↩️</span>
+          <div className="flex items-center gap-1.5 bg-purple-50 rounded-xl px-3 py-1.5 flex-shrink-0">
+            <span className="text-xs">↩️</span>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#212121' }}>Easy Returns</div>
-              <div style={{ fontSize: '11px', color: '#878787' }}>Hassle free</div>
+              <div className="text-xs font-bold text-purple-700">Easy Returns</div>
+              <div className="text-xs text-purple-400">Hassle free</div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '16px' }}>✅</span>
+          <div className="flex items-center gap-1.5 bg-green-50 rounded-xl px-3 py-1.5 flex-shrink-0">
+            <span className="text-xs">✅</span>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#212121' }}>Verified Shop</div>
-              <div style={{ fontSize: '11px', color: '#878787' }}>Trusted seller</div>
+              <div className="text-xs font-bold text-green-700">Verified</div>
+              <div className="text-xs text-green-400">Trusted seller</div>
             </div>
           </div>
         </div>
@@ -1250,92 +1623,109 @@ export default function ShopPage() {
 
       {/* ── ANNOUNCEMENT ── */}
       {shop.homePage?.announcement && (
-        <div style={{
-          background: '#fff8e1', borderLeft: '4px solid #ffc107',
-          margin: '0 0 8px', padding: '12px 16px',
-          display: 'flex', gap: '10px', alignItems: 'flex-start',
-        }}>
-          <span style={{ fontSize: '16px', flexShrink: 0 }}>📢</span>
-          <p style={{ fontSize: '13px', color: '#5d4037', margin: 0, fontWeight: '500' }}>
-            {shop.homePage.announcement}
-          </p>
+        <div className="mx-3 mb-3 bg-amber-50 border border-amber-100 rounded-2xl p-3 flex gap-2 items-start">
+          <span className="text-base flex-shrink-0">📢</span>
+          <p className="text-xs text-amber-800 font-medium leading-relaxed m-0">{shop.homePage.announcement}</p>
         </div>
       )}
 
-      {/* ── OFFERS ── */}
-      {shop.homePage?.offers?.length > 0 && (
-        <div style={{ background: 'white', marginBottom: '8px', padding: '14px 16px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#212121', margin: '0 0 12px' }}>
-            🔥 Special Offers
-          </h2>
-          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
-            {shop.homePage.offers.map((offer, i) => (
-              <div key={i} style={{
-                flexShrink: 0, minWidth: '160px',
-                background: 'linear-gradient(135deg, #ff6b35, #f7c59f)',
-                borderRadius: '8px', padding: '12px',
-              }}>
-                <div style={{ fontSize: '12px', fontWeight: '800', color: 'white' }}>{offer.title}</div>
-                <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)', marginTop: '2px' }}>{offer.description}</div>
-                {offer.discount && (
-                  <div style={{ fontSize: '22px', fontWeight: '900', color: 'white', marginTop: '6px' }}>
-                    {offer.discount}% OFF
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+{/* ── SHOP CLOSED BANNER ── */}
+{!shop.isOpen && (
+  <div className="mx-3 mb-3 bg-red-50 border border-red-200 rounded-2xl p-4 flex gap-3 items-start">
+    <span className="text-xl flex-shrink-0">🔒</span>
+    <div>
+      <p className="text-sm font-black text-red-700">Yeh shop abhi band hai</p>
+      {shop.closedMessage && (
+        <p className="text-xs text-red-500 mt-0.5">{shop.closedMessage}</p>
       )}
+    </div>
+  </div>
+)}
 
+{/* ── DELIVERY OFF TODAY BANNER ── */}
+{shop.isOpen && shop.deliverySettings?.deliveryOffToday && (
+  <div className="mx-3 mb-3 bg-orange-50 border border-orange-200 rounded-2xl p-4 flex gap-3 items-start">
+    <span className="text-xl flex-shrink-0">🚫</span>
+    <div>
+      <p className="text-sm font-black text-orange-700">Aaj delivery available nahi hai</p>
+      {shop.deliverySettings.deliveryOffMessage && (
+        <p className="text-xs text-orange-500 mt-0.5">{shop.deliverySettings.deliveryOffMessage}</p>
+      )}
+    </div>
+  </div>
+)}
+
+
+
+{/* ── OFFERS ── */}
+{shop.homePage?.offers?.filter(o => o.isActive).length > 0 && (
+  <div className="mb-3">
+    <div className="px-4 mb-2">
+      <h2 className="text-sm font-black text-gray-900">🔥 Special Offers</h2>
+    </div>
+    <div className="flex gap-3 px-3 overflow-x-auto hide-scrollbar pb-1">
+      {shop.homePage.offers.filter(o => o.isActive).map((offer, i) => (
+        <div key={i}
+          className="flex-shrink-0 min-w-44 rounded-2xl p-4 text-white shadow-sm"
+          style={{ background: offer.bgColor || shop.themeColor }}>
+          <div className="text-xs font-black">{offer.title}</div>
+          {offer.description && <div className="text-xs opacity-80 mt-0.5">{offer.description}</div>}
+          {offer.discount > 0 && <div className="text-2xl font-black mt-1">{offer.discount}% OFF</div>}
+          {offer.validTill && (
+            <div className="text-xs opacity-60 mt-1">
+              Till {new Date(offer.validTill).toLocaleDateString('en-IN')}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
       {/* ── CATEGORY FILTER ── */}
-      <div style={{
-        background: 'white', marginBottom: '8px',
-        padding: '12px 16px', borderBottom: '1px solid #e0e0e0',
-      }}>
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
+      <div className="bg-white mx-3 rounded-2xl border border-gray-100 mb-3 p-3">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar">
           {categories.map(cat => (
             <button key={cat} onClick={() => setActiveCategory(cat)}
-              style={{
-                flexShrink: 0, padding: '7px 16px', borderRadius: '20px',
-                fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                border: activeCategory === cat ? '2px solid #2874f0' : '1px solid #e0e0e0',
-                background: activeCategory === cat ? '#e8f0fe' : 'white',
-                color: activeCategory === cat ? '#2874f0' : '#555',
-                transition: 'all 0.15s',
-              }}>
-              {cat === 'all' ? 'All' : cat}
+              className={`flex-shrink-0 px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                activeCategory === cat
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-50 text-gray-500 hover:bg-gray-100'
+              }`}>
+              {cat === 'all' ? 'All Products' : cat}
             </button>
           ))}
         </div>
       </div>
 
       {/* ── PRODUCTS ── */}
-      <div style={{ padding: '0 8px' }}>
+      <div className="px-3">
         {filteredProducts.length === 0 ? (
-          <div style={{
-            background: 'white', borderRadius: '8px', margin: '8px 0',
-            padding: '48px 16px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📦</div>
-            <p style={{ fontSize: '16px', fontWeight: '700', color: '#212121', margin: '0 0 4px' }}>
-              Koi product nahi mila
+          <div className="bg-white rounded-2xl border border-gray-100 py-16 text-center">
+            <div className="text-5xl mb-3">
+              {searchQuery ? '🔍' : '📦'}
+            </div>
+            <p className="font-black text-gray-900 text-base">
+              {searchQuery ? `"${searchQuery}" nahi mila` : 'Koi product nahi'}
             </p>
-            <p style={{ fontSize: '13px', color: '#878787', margin: 0 }}>
-              Is category mein abhi kuch nahi hai
+            <p className="text-xs text-gray-400 mt-1">
+              {searchQuery ? 'Kuch aur search karo' : 'Is category mein abhi kuch nahi hai'}
             </p>
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')}
+                className="mt-3 text-xs bg-gray-900 text-white px-4 py-2 rounded-xl font-bold">
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           <>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 8px 8px',
-            }}>
-              <span style={{ fontSize: '13px', color: '#878787' }}>
-                {filteredProducts.length} products found
+            <div className="flex items-center justify-between py-2 px-1 mb-2">
+              <span className="text-xs text-gray-400 font-medium">
+                {filteredProducts.length} products
+                {searchQuery && <span className="text-gray-900 font-bold"> for "{searchQuery}"</span>}
               </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div className="grid grid-cols-2 gap-3">
               {filteredProducts.map(product => (
                 <ProductCard key={product._id} product={product} />
               ))}
@@ -1344,37 +1734,25 @@ export default function ShopPage() {
         )}
       </div>
 
-      {/* ── FLOATING CART BAR — 3 second mein gayab ── */}
-      {showCartBar && cartCount > 0 && (  // ✅ showCartBar condition
-        <div style={{
-          position: 'fixed', bottom: '64px', left: 0, right: 0, zIndex: 40,
-          padding: '0 16px',
-          animation: 'fadeIn 0.3s ease',
-        }}>
-          <Link href="/cart" style={{ textDecoration: 'none' }}>
-            <div style={{
-              background: '#2874f0', borderRadius: '8px',
-              padding: '14px 20px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              boxShadow: '0 4px 20px rgba(40,116,240,0.4)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{
-                  background: 'rgba(255,255,255,0.2)', borderRadius: '6px',
-                  padding: '4px 10px', fontSize: '13px', fontWeight: '700', color: 'white',
-                }}>
+      {/* ── FLOATING CART BAR ── */}
+      {showCartBar && cartCount > 0 && (
+        <div className="fixed bottom-20 left-3 right-3 z-40">
+          <Link href="/cart" className="no-underline">
+            <div className="bg-gray-900 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-3">
+                <span className="bg-white/15 text-white text-xs font-black px-3 py-1 rounded-xl">
                   {cartCount} items
                 </span>
-                <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '13px' }}>Cart mein hai</span>
+                <span className="text-white/70 text-sm">Cart mein hai</span>
               </div>
-              <span style={{ color: 'white', fontWeight: '700', fontSize: '14px' }}>
-                View Cart →
-              </span>
+              <span className="text-white font-bold text-sm">View Cart →</span>
             </div>
           </Link>
         </div>
       )}
 
+
+     
       <BottomNav />
     </div>
   );

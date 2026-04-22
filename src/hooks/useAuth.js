@@ -97,22 +97,24 @@ export const useAuth = () => {
   const { user, shop, token, isAuthenticated, loading, isRestoring  } = useSelector(state => state.auth);
 
   const login = async (phone, password) => {
-    try {
-      const data = await loginService({ phone, password });
-      dispatch(loginSuccess(data));
-      toast.success('Login successful!');
-      if (data.user.role === 'shop') {
-        router.push('/dashboard');
-      } else {
-        router.push('/');
-      }
-      return data;
-    } catch (error) {
-      const msg = error.response?.data?.message || 'Login failed';
-      toast.error(msg);
-      throw error;
+  try {
+    const data = await loginService({ phone, password });
+    dispatch(loginSuccess(data));
+    toast.success('Login successful!');
+    if (data.user.role === 'admin') {
+      router.push('/admin');        // ✅ Admin redirect
+    } else if (data.user.role === 'shop') {
+      router.push('/dashboard');
+    } else {
+      router.push('/');
     }
-  };
+    return data;
+  } catch (error) {
+    const msg = error.response?.data?.message || 'Login failed';
+    toast.error(msg);
+    throw error;
+  }
+};
 
   const register = async (formData) => {
     try {

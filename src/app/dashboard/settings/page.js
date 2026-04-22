@@ -1954,13 +1954,33 @@ export default function SettingsPage() {
     lat: shop?.address?.location?.lat || '',
     lng: shop?.address?.location?.lng || '',
     upiId: shop?.upiId || '', // ✅ UPI ID
+     closedMessage: shop?.closedMessage || '',
   });
 
   const [deliveryForm, setDeliveryForm] = useState({
-    deliveryEnabled: shop?.deliverySettings?.deliveryEnabled ?? true,
-    customDeliveryDiscount: shop?.deliverySettings?.customDeliveryDiscount || 0,
-    maxDeliveryDistance: shop?.deliverySettings?.maxDeliveryDistance || 5,
-  });
+  deliveryEnabled: shop?.deliverySettings?.deliveryEnabled ?? true,
+  customDeliveryDiscount: shop?.deliverySettings?.customDeliveryDiscount || 0,
+  maxDeliveryDistance: shop?.deliverySettings?.maxDeliveryDistance || 5,
+  freeDeliveryAbove: shop?.deliverySettings?.freeDeliveryAbove ?? 100,
+   deliveryOffToday: shop?.deliverySettings?.deliveryOffToday ?? false,
+  deliveryOffMessage: shop?.deliverySettings?.deliveryOffMessage || '',
+  extendedDelivery: {
+    enabled: shop?.deliverySettings?.extendedDelivery?.enabled ?? false,
+    maxDistance: shop?.deliverySettings?.extendedDelivery?.maxDistance || 10,
+    chargePerKm: shop?.deliverySettings?.extendedDelivery?.chargePerKm || 15,
+  }
+});
+
+const [offerForm, setOfferForm] = useState({
+  title: '',
+  description: '',
+  discount: '',
+  bgColor: '#ef4444',
+  validTill: ''
+});
+
+const [savingOffer, setSavingOffer] = useState(false);
+const [currentOffers, setCurrentOffers] = useState(shop?.homePage?.offers || []);
 
   const [currentLogo, setCurrentLogo] = useState(shop?.logo || '');
   const [currentBanner, setCurrentBanner] = useState(shop?.banner || '');
@@ -2046,7 +2066,8 @@ export default function SettingsPage() {
             lat: shopForm.lat ? parseFloat(shopForm.lat) : null,
             lng: shopForm.lng ? parseFloat(shopForm.lng) : null,
           }
-        }
+        },
+        closedMessage: shopForm.closedMessage,
       });
       toast.success('Shop update ho gayi!');
     } catch { toast.error('Update failed!'); }
@@ -2076,9 +2097,46 @@ export default function SettingsPage() {
     }
   };
 
+  const handleAddOffer = async () => {
+  if (!offerForm.title) { toast.error('Title zaroori hai!'); return; }
+  setSavingOffer(true);
+  try {
+    const newOffer = {
+      title: offerForm.title,
+      description: offerForm.description,
+      discount: Number(offerForm.discount) || 0,
+      bgColor: offerForm.bgColor,
+      validTill: offerForm.validTill || null,
+      isActive: true
+    };
+    const updatedOffers = [...currentOffers, newOffer];
+    await updateShop({ offers: updatedOffers });
+    setCurrentOffers(updatedOffers);
+    setOfferForm({ title: '', description: '', discount: '', bgColor: '#ef4444', validTill: '' });
+    toast.success('Offer add ho gaya! 🎉');
+  } catch { toast.error('Save nahi hua!'); }
+  finally { setSavingOffer(false); }
+};
+
+const handleDeleteOffer = async (index) => {
+  const updatedOffers = currentOffers.filter((_, i) => i !== index);
+  await updateShop({ offers: updatedOffers });
+  setCurrentOffers(updatedOffers);
+  toast.success('Offer hata diya!');
+};
+
+const handleToggleOffer = async (index) => {
+  const updatedOffers = currentOffers.map((o, i) =>
+    i === index ? { ...o, isActive: !o.isActive } : o
+  );
+  await updateShop({ offers: updatedOffers });
+  setCurrentOffers(updatedOffers);
+};
+
   const TABS = [
     { id: 'shop', label: '🏪 Shop' },
     { id: 'appearance', label: '🎨 Appearance' },
+     { id: 'offers', label: '🔥 Offers' },
     { id: 'delivery', label: '🚚 Delivery' },
     { id: 'domain', label: '🌐 Domain' },
   ];
@@ -2348,6 +2406,19 @@ export default function SettingsPage() {
 
           </div>
 
+          {/* Closed Message */}
+{!shopForm.isOpen && (
+  <div className="mt-3">
+    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+      Closed Message (optional)
+    </label>
+    <input type="text" value={shopForm.closedMessage}
+      onChange={(e) => setShopForm({ ...shopForm, closedMessage: e.target.value })}
+      placeholder="Jaise: Aaj Sunday hai, kal subah 9 baje khulega"
+      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all" />
+  </div>
+)}
+
           {/* Shop Link */}
           <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
             <p className="text-xs font-bold text-green-700 uppercase tracking-wider mb-2">🌐 Your Shop Link</p>
@@ -2371,70 +2442,393 @@ export default function SettingsPage() {
         </form>
       )}
 
-      {/* ── DELIVERY TAB ── */}
       {activeTab === 'delivery' && (
-        <form onSubmit={handleDeliveryUpdate} className="space-y-4">
-          <div className="bg-white rounded-3xl border border-gray-100 p-5 space-y-5">
+  <form onSubmit={handleDeliveryUpdate} className="space-y-4">
 
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-bold text-gray-900">Delivery Enable</p>
-                <p className="text-xs text-gray-400">Customers ko delivery milegi?</p>
-              </div>
-              <button type="button"
-                onClick={() => setDeliveryForm({ ...deliveryForm, deliveryEnabled: !deliveryForm.deliveryEnabled })}
-                className={`w-14 h-7 rounded-full transition-all relative ${deliveryForm.deliveryEnabled ? 'bg-green-500' : 'bg-gray-300'}`}>
-                <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all ${deliveryForm.deliveryEnabled ? 'left-8' : 'left-1'}`} />
-              </button>
-            </div>
+    {/* ── DELIVERY ON/OFF ── */}
+    <div className="bg-white rounded-3xl border border-gray-100 p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-black text-gray-900">Delivery Enable</p>
+          <p className="text-xs text-gray-400 mt-0.5">Customers ko delivery milegi?</p>
+        </div>
+        <button type="button"
+          onClick={() => setDeliveryForm({ ...deliveryForm, deliveryEnabled: !deliveryForm.deliveryEnabled })}
+          className={`w-14 h-7 rounded-full transition-all relative ${deliveryForm.deliveryEnabled ? 'bg-green-500' : 'bg-gray-300'}`}>
+          <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all shadow ${deliveryForm.deliveryEnabled ? 'left-8' : 'left-1'}`} />
+        </button>
+      </div>
+    </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                Custom Delivery Discount (₹)
-              </label>
-              <input type="number" value={deliveryForm.customDeliveryDiscount}
-                onChange={(e) => setDeliveryForm({ ...deliveryForm, customDeliveryDiscount: Number(e.target.value) })}
-                min="0" max="30"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all" />
-              <p className="text-xs text-gray-400 mt-1">Platform rate se kitna discount dena chahte ho</p>
-            </div>
+    
 
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-                Max Delivery Distance (km)
-              </label>
-              <input type="number" value={deliveryForm.maxDeliveryDistance}
-                onChange={(e) => setDeliveryForm({ ...deliveryForm, maxDeliveryDistance: Number(e.target.value) })}
-                min="1" max="5"
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all" />
-            </div>
+    {deliveryForm.deliveryEnabled && (
+      <>
 
-            <div className="bg-gray-50 rounded-2xl p-4">
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Platform Delivery Rates</p>
-              <div className="space-y-2">
-                {[
-                  { range: '0–1 km', rates: '₹5 – ₹15' },
-                  { range: '1–2 km', rates: '₹10 – ₹20' },
-                  { range: '2–3 km', rates: '₹15 – ₹25' },
-                  { range: '3–5 km', rates: '₹20 – ₹30' },
-                ].map((r) => (
-                  <div key={r.range} className="flex justify-between text-sm">
-                    <span className="text-gray-500">{r.range}</span>
-                    <span className="font-semibold text-gray-900">{r.rates}</span>
-                  </div>
-                ))}
-                <p className="text-xs text-green-600 font-medium mt-2">₹100+ orders pe FREE delivery!</p>
-              </div>
+      {/* ── DELIVERY OFF TODAY ── */}
+<div className="bg-white rounded-3xl border border-gray-100 p-5 space-y-3">
+  <div className="flex items-center justify-between">
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-lg">📅</span>
+        <p className="font-black text-gray-900">Aaj Delivery Band</p>
+      </div>
+      <p className="text-xs text-gray-400">Delivery boy chhuti pe hai ya aaj deliver nahi kar sakte?</p>
+    </div>
+    <button type="button"
+      onClick={() => setDeliveryForm({ ...deliveryForm, deliveryOffToday: !deliveryForm.deliveryOffToday })}
+      className={`w-14 h-7 rounded-full transition-all relative flex-shrink-0 ${deliveryForm.deliveryOffToday ? 'bg-red-500' : 'bg-gray-300'}`}>
+      <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all shadow ${deliveryForm.deliveryOffToday ? 'left-8' : 'left-1'}`} />
+    </button>
+  </div>
+
+  {deliveryForm.deliveryOffToday && (
+    <div className="space-y-3 pt-2 border-t border-gray-100">
+      <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+        <p className="text-xs font-black text-red-600">🚫 Aaj delivery nahi hogi — customers ko dikhega</p>
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+          Message Customers Ko (optional)
+        </label>
+        <input type="text" value={deliveryForm.deliveryOffMessage}
+          onChange={(e) => setDeliveryForm({ ...deliveryForm, deliveryOffMessage: e.target.value })}
+          placeholder="Jaise: Delivery boy chhuti pe hai, kal se normal delivery"
+          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-400 transition-all" />
+      </div>
+    </div>
+  )}
+</div>
+
+        {/* ── PLATFORM RATES INFO ── */}
+        <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5">
+          <p className="text-xs font-black text-blue-700 uppercase tracking-wider mb-3">📋 Platform Delivery Rates (Fixed)</p>
+          <div className="space-y-2.5">
+            {[
+  { range: '0–1 km', low: '₹15 (<₹50)', mid: '₹10 (₹50–₹199)', high: '₹5 (₹200+)' },
+  { range: '1–2 km', low: '₹20 (<₹50)', mid: '₹15 (₹50–₹199)', high: '₹8 (₹200+)' },
+  { range: '2–3 km', low: '₹25 (<₹50)', mid: '₹20 (₹50–₹199)', high: '₹10 (₹200+)' },
+  { range: '3–5 km', low: '₹35 (<₹50)', mid: '₹25 (₹50–₹199)', high: '₹15 (₹200+)' },
+].map((r) => (
+  <div key={r.range} className="bg-white rounded-2xl px-4 py-3">
+    <p className="text-xs font-black text-gray-700 mb-1">{r.range}</p>
+    <div className="flex gap-2 flex-wrap">
+      <span className="text-[11px] bg-red-50 text-red-600 font-bold px-2 py-0.5 rounded-lg">{r.low}</span>
+      <span className="text-[11px] bg-amber-50 text-amber-600 font-bold px-2 py-0.5 rounded-lg">{r.mid}</span>
+      <span className="text-[11px] bg-green-50 text-green-600 font-bold px-2 py-0.5 rounded-lg">{r.high}</span>
+    </div>
+  </div>
+))}
+          </div>
+          <p className="text-[11px] text-blue-500 font-medium mt-3">* Ye rates platform set karta hai — aap inhe kam kar sakte ho, zyada nahi</p>
+        </div>
+
+        {/* ── FREE DELIVERY ABOVE ── */}
+        <div className="bg-white rounded-3xl border border-gray-100 p-5 space-y-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">🎁</span>
+              <p className="font-black text-gray-900">Free Delivery Kitne Pe?</p>
             </div>
+            <p className="text-xs text-gray-400">Is amount se zyada order pe delivery free hogi</p>
           </div>
 
-          <button type="submit" disabled={loading}
-            className="w-full py-4 bg-gray-900 text-white font-bold rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
-            {loading && <Spinner />}
-            {loading ? 'Saving...' : 'Save Delivery Settings'}
-          </button>
-        </form>
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-black text-gray-400">₹</span>
+            <input
+              type="number"
+              value={deliveryForm.freeDeliveryAbove}
+              onChange={(e) => setDeliveryForm({ ...deliveryForm, freeDeliveryAbove: Number(e.target.value) })}
+              min="0"
+              max="10000"
+              placeholder="100"
+              className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-green-400 transition-all"
+            />
+            <span className="text-sm text-gray-500 font-medium">se upar</span>
+          </div>
+
+          {/* Quick select buttons */}
+          <div className="flex gap-2 flex-wrap">
+            {[0, 50, 100, 200, 500].map((val) => (
+              <button key={val} type="button"
+                onClick={() => setDeliveryForm({ ...deliveryForm, freeDeliveryAbove: val })}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  deliveryForm.freeDeliveryAbove === val
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}>
+                {val === 0 ? 'Kabhi Nahi' : `₹${val}+`}
+              </button>
+            ))}
+          </div>
+
+          {deliveryForm.freeDeliveryAbove > 0 && (
+            <div className="bg-green-50 border border-green-100 rounded-2xl px-4 py-3">
+              <p className="text-xs font-black text-green-700">
+                ✅ ₹{deliveryForm.freeDeliveryAbove} ya usse zyada ka order → FREE delivery
+              </p>
+              <p className="text-xs text-green-600 mt-0.5">
+                ₹{deliveryForm.freeDeliveryAbove - 1} se kam → platform rates apply honge
+              </p>
+            </div>
+          )}
+          {deliveryForm.freeDeliveryAbove === 0 && (
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3">
+              <p className="text-xs font-bold text-gray-500">ℹ️ Kisi bhi order pe free delivery nahi hogi</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── DELIVERY DISCOUNT ── */}
+        <div className="bg-white rounded-3xl border border-gray-100 p-5 space-y-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">💸</span>
+              <p className="font-black text-gray-900">Delivery Discount</p>
+            </div>
+            <p className="text-xs text-gray-400">Platform rate se kitna kam charge lena chahte ho</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-lg font-black text-gray-400">₹</span>
+            <input
+              type="number"
+              value={deliveryForm.customDeliveryDiscount}
+              onChange={(e) => setDeliveryForm({ ...deliveryForm, customDeliveryDiscount: Number(e.target.value) })}
+              min="0" max="30" placeholder="0"
+              className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all"
+            />
+            <span className="text-sm text-gray-500 font-medium">rupee kam</span>
+          </div>
+          {deliveryForm.customDeliveryDiscount > 0 && (
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3">
+              <p className="text-xs font-black text-amber-700">
+                💰 Platform rate se ₹{deliveryForm.customDeliveryDiscount} kam charge hoga
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* ── 5KM SE UPAR DELIVERY ── */}
+        <div className="bg-white rounded-3xl border border-gray-100 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">🗺️</span>
+                <p className="font-black text-gray-900">5 KM Se Upar Delivery</p>
+              </div>
+              <p className="text-xs text-gray-400">5km ke baad bhi deliver karna chahte ho?</p>
+            </div>
+            <button type="button"
+              onClick={() => setDeliveryForm({
+                ...deliveryForm,
+                extendedDelivery: {
+                  ...deliveryForm.extendedDelivery,
+                  enabled: !deliveryForm.extendedDelivery.enabled
+                }
+              })}
+              className={`w-14 h-7 rounded-full transition-all relative flex-shrink-0 ${deliveryForm.extendedDelivery.enabled ? 'bg-green-500' : 'bg-gray-300'}`}>
+              <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all shadow ${deliveryForm.extendedDelivery.enabled ? 'left-8' : 'left-1'}`} />
+            </button>
+          </div>
+
+          {deliveryForm.extendedDelivery.enabled && (
+            <div className="space-y-4 pt-2 border-t border-gray-100">
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  Maximum Distance (km)
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    value={deliveryForm.extendedDelivery.maxDistance}
+                    onChange={(e) => setDeliveryForm({
+                      ...deliveryForm,
+                      extendedDelivery: { ...deliveryForm.extendedDelivery, maxDistance: Number(e.target.value) }
+                    })}
+                    min="6" max="50" placeholder="10"
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all"
+                  />
+                  <span className="text-sm text-gray-500 font-medium">km tak</span>
+                </div>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  {[10, 15, 20, 30].map((val) => (
+                    <button key={val} type="button"
+                      onClick={() => setDeliveryForm({
+                        ...deliveryForm,
+                        extendedDelivery: { ...deliveryForm.extendedDelivery, maxDistance: val }
+                      })}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        deliveryForm.extendedDelivery.maxDistance === val
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                      {val} km
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  Charge Per KM (₹)
+                </label>
+                <div className="flex items-center gap-3">
+                  <span className="text-lg font-black text-gray-400">₹</span>
+                  <input
+                    type="number"
+                    value={deliveryForm.extendedDelivery.chargePerKm}
+                    onChange={(e) => setDeliveryForm({
+                      ...deliveryForm,
+                      extendedDelivery: { ...deliveryForm.extendedDelivery, chargePerKm: Number(e.target.value) }
+                    })}
+                    min="5" max="100" placeholder="15"
+                    className="flex-1 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all"
+                  />
+                  <span className="text-sm text-gray-500 font-medium">/ km</span>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
+                <p className="text-xs font-black text-blue-700 mb-1">📍 Preview</p>
+                <p className="text-xs text-blue-600">
+                  5–{deliveryForm.extendedDelivery.maxDistance} km tak deliver karoge
+                </p>
+                <p className="text-xs text-blue-600 mt-0.5">
+                  Charge: ₹{deliveryForm.extendedDelivery.chargePerKm}/km
+                  {' '}(8 km = ₹{(8 * deliveryForm.extendedDelivery.chargePerKm).toFixed(0)} example)
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+      </>
+    )}
+
+    <button type="submit" disabled={loading}
+      className="w-full py-4 bg-gray-900 text-white font-black rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+      {loading && <Spinner />}
+      {loading ? 'Saving...' : '💾 Save Delivery Settings'}
+    </button>
+  </form>
+)}
+
+
+{activeTab === 'offers' && (
+  <div className="space-y-4">
+
+    {/* Current Offers */}
+    {currentOffers.length > 0 && (
+      <div className="space-y-3">
+        <p className="text-xs font-black text-gray-500 uppercase tracking-wider px-1">Active Offers</p>
+        {currentOffers.map((offer, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            {/* Preview */}
+            <div className="p-4 text-white relative"
+              style={{ background: offer.bgColor || shop?.themeColor || '#ef4444' }}>
+              <div className="text-sm font-black">{offer.title}</div>
+              {offer.description && <div className="text-xs opacity-80 mt-0.5">{offer.description}</div>}
+              {offer.discount > 0 && <div className="text-3xl font-black mt-1">{offer.discount}% OFF</div>}
+              {offer.validTill && (
+                <div className="text-xs opacity-70 mt-1">
+                  Valid till: {new Date(offer.validTill).toLocaleDateString('en-IN')}
+                </div>
+              )}
+            </div>
+            {/* Actions */}
+            <div className="flex items-center gap-2 px-4 py-3 border-t border-gray-50">
+              <button onClick={() => handleToggleOffer(i)}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                  offer.isActive
+                    ? 'bg-green-50 text-green-700 border border-green-100'
+                    : 'bg-gray-50 text-gray-500 border border-gray-200'
+                }`}>
+                {offer.isActive ? '✅ Active' : '⏸ Inactive'}
+              </button>
+              <button onClick={() => handleDeleteOffer(i)}
+                className="flex-1 py-2 bg-red-50 text-red-600 font-bold rounded-xl text-xs border border-red-100 transition-all active:scale-95">
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Add New Offer */}
+    <div className="bg-white rounded-3xl border border-gray-100 p-5 space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="w-1 h-5 bg-gray-900 rounded-full" />
+        <p className="font-black text-gray-900">Naya Offer Add Karo</p>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Title *</label>
+        <input type="text" value={offerForm.title}
+          onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+          placeholder="Jaise: Weekend Special, Diwali Offer..."
+          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all" />
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Description</label>
+        <input type="text" value={offerForm.description}
+          onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })}
+          placeholder="Jaise: Sab products pe discount..."
+          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all" />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Discount %</label>
+          <input type="number" value={offerForm.discount}
+            onChange={(e) => setOfferForm({ ...offerForm, discount: e.target.value })}
+            placeholder="10" min="0" max="99"
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all" />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Valid Till</label>
+          <input type="date" value={offerForm.validTill}
+            onChange={(e) => setOfferForm({ ...offerForm, validTill: e.target.value })}
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all" />
+        </div>
+      </div>
+
+      {/* Color picker */}
+      <div>
+        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Banner Color</label>
+        <div className="flex gap-2 flex-wrap">
+          {['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899','#111827'].map(color => (
+            <button key={color} type="button"
+              onClick={() => setOfferForm({ ...offerForm, bgColor: color })}
+              className={`w-8 h-8 rounded-xl transition-all ${offerForm.bgColor === color ? 'ring-2 ring-offset-2 ring-gray-900 scale-110' : ''}`}
+              style={{ backgroundColor: color }} />
+          ))}
+        </div>
+      </div>
+
+      {/* Live Preview */}
+      {offerForm.title && (
+        <div className="rounded-2xl p-4 text-white"
+          style={{ background: offerForm.bgColor }}>
+          <p className="text-xs font-black uppercase tracking-wider opacity-70 mb-1">Preview</p>
+          <div className="text-sm font-black">{offerForm.title}</div>
+          {offerForm.description && <div className="text-xs opacity-80 mt-0.5">{offerForm.description}</div>}
+          {offerForm.discount > 0 && <div className="text-3xl font-black mt-1">{offerForm.discount}% OFF</div>}
+        </div>
       )}
+
+      <button onClick={handleAddOffer} disabled={savingOffer || !offerForm.title}
+        className="w-full py-3.5 bg-gray-900 text-white font-black rounded-2xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+        {savingOffer ? <><Spinner />Saving...</> : '🔥 Add Offer'}
+      </button>
+    </div>
+  </div>
+)}
+
+
 
       {/* ── DOMAIN TAB ── */}
       {activeTab === 'domain' && (

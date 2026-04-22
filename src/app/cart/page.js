@@ -1895,7 +1895,7 @@ export default function CartPage() {
 
   // ── COD / UDHAR order place ──
   const handlePlaceOrder = async () => {
-    if (!address.fullAddress || !address.city) {
+   if (!address.fullAddress?.trim() || !address.city?.trim()) {
       toast.error('Delivery address fill karo!');
       return;
     }
