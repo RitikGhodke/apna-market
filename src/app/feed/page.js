@@ -434,25 +434,7 @@ export default function FeedPage() {
             </div>
           </div>
 
-          {/* Search bar */}
-          <div className="flex items-center gap-2 rounded-2xl px-4 py-2.5 mb-3"
-            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
-            <span className="text-sm flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>
-              {searching ? '⏳' : '🔍'}
-            </span>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Shops ya products search karo..."
-              className="flex-1 bg-transparent border-none outline-none text-sm"
-              style={{ color: 'white' }}
-            />
-            {searchQuery && (
-              <button onClick={() => { setSearchQuery(''); setSearchResults([]); }}
-                className="text-sm transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>✕</button>
-            )}
-          </div>
+          
 
           {/* Search type toggle */}
           {searchQuery && (
@@ -568,7 +550,7 @@ export default function FeedPage() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[1,2,3,4].map(i => <div key={i} className="h-52 skeleton rounded-2xl" />)}
               </div>
             ) : shops.length === 0 ? (
@@ -578,7 +560,7 @@ export default function FeedPage() {
                 <p className="text-gray-400 text-xs mt-1">Is area mein abhi koi shop nahi hai</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {shops.map(shop => <ShopCard key={shop._id} shop={shop} />)}
               </div>
             )}
